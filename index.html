@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Teste de Excel Básico Interativo - Tema Excel</title>
+    <link rel="shortcut icon" href="IconeExcel32.png" type="image/x-icon" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* Cores do Excel */
+      :root {
+        --excel-green-dark: #107c41; /* Verde Principal */
+        --excel-green-light: #e6ffe6; /* Verde Claro para destaque (mais suave que o original) */
+        --excel-border: #d1d1d1; /* Borda de célula */
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #f8f8f8; /* Fundo levemente off-white */
+      }
+
+      #quiz-container {
+        background-color: #ffffff;
+        color: black;
+      }
+
+      header {
+        background-color: #107c41;
+      }
+
+      header h1,
+      p,
+      h3 {
+        text-align: center;
+        color: #ebe3e3;
+      }
+
+      /* Simula o visual de planilha */
+      .excel-card {
+        border: 1px solid var(--excel-border);
+        border-radius: 4px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      }
+
+      /* Estilo para quando a resposta correta for exibida na revisão */
+      .correct-answer {
+        background-color: var(--excel-green-light);
+        border-color: var(--excel-green-dark);
+      }
+
+      /* Estilo para quando a resposta incorreta for exibida na revisão */
+      .incorrect-answer {
+        background-color: #fcebeb; /* bg-red-100 */
+        border-color: #ef4444; /* border-red-500 */
+      }
+
+      /* Oculta o input radio nativo */
+      input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+        cursor: pointer;
+      }
+
+      /* Estilo da label para simular a seleção no Excel */
+      .option-label {
+        border: 1px solid var(--excel-border);
+      }
+
+      .option-label:hover {
+        background-color: #f0f0f0;
+      }
+
+      /* Estilo da label quando o radio está checado (selecionado) */
+      input[type="radio"]:checked + .option-label {
+        background-color: #ebf5ff; /* Um toque de azul claro para indicar seleção ativa */
+        border-color: #4c96e6; /* Borda azul clara */
+        box-shadow: 0 0 0 1px #4c96e6 inset;
+      }
+
+      /* Estilo para as perguntas dentro do container verde */
+      #quiz-container .question-item {
+        border-color: rgba(255, 255, 255, 0.2); /* Borda branca suave */
+        background-color: rgba(
+          0,
+          0,
+          0,
+          0.05
+        ); /* Um leve cinza escuro para contraste */
+      }
+
+      #quiz-container .question-item h4 {
+        color: #000000; /* Texto da pergunta em branco */
+      }
+
+      #quiz-container .option-label {
+        color: #1f2937; /* Texto da opção mais escuro para melhor legibilidade */
+        background-color: #ffffff; /* Fundo branco para as opções */
+      }
+
+      #quiz-container .option-label:hover {
+        background-color: #f0f0f0;
+      }
+
+      #quiz-container input[type="radio"]:checked + .option-label {
+        background-color: #e6ffe6; /* Verde claro nas opções selecionadas */
+        border-color: var(--excel-green-dark);
+        box-shadow: 0 0 0 1px var(--excel-green-dark) inset;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen flex items-start justify-center p-4 md:p-8">
+    <div class="w-full max-w-4xl">
+      <!-- Header do Teste - Destaque Excel Green -->
+      <header
+        class="bg- [var(--excel-green-dark)] p-6 md:p-8 rounded-lg excel-card mb-8 border-t-4 border-[var(--excel-green-dark)]"
+      >
+        <h1 class="text-3xl font-bold">Teste de Excel Básico Interativo</h1>
+        <p class="mt-2">Avaliação de 20 questões do Microsoft Excel.</p>
+        <h3>Professor Cláudio Caldas</h3>
+      </header>
+
+      <!-- Container do Teste: Fundo Alterado para #107C41 -->
+      <div
+        id="quiz-container"
+        class="bg-[var(--excel-green-dark)] p-6 md:p-8 rounded-lg excel-card text-white"
+      >
+        <form id="quiz-form">
+          <div id="questions-list" class="space-y-8">
+            <!-- As perguntas serão injetadas aqui pelo JavaScript -->
+          </div>
+
+          <div class="mt-10 pt-6 border-t border-[var(--excel-border)]">
+            <button
+              type="submit"
+              id="submit-button"
+              class="w-full md:w-auto px-6 py-3 bg-white text-[var(--excel-green-dark)] font-semibold rounded-lg hover:bg-gray-100 transition duration-300 shadow-md"
+            >
+              Finalizar Teste e Ver Resultado
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Área de Resultado (Oculta inicialmente) -->
+      <div
+        id="results-area"
+        class="hidden mt-8 p-6 bg-white rounded-lg excel-card border-t-4 border-gray-400"
+      >
+        <h2
+          class="text-2xl font-bold text-center mb-4 text-[var(--excel-green-dark)]"
+        >
+          Seu Resultado
+        </h2>
+        <div
+          class="flex flex-col md:flex-row justify-center items-center space-y-4 md:space-y-0 md:space-x-8 mb-6 p-4 border rounded-lg bg-gray-50"
+        >
+          <div class="text-center">
+            <p class="text-sm text-gray-500">Acertos</p>
+            <p
+              id="score-display"
+              class="text-4xl font-extrabold text-green-600"
+            >
+              0/20
+            </p>
+          </div>
+          <div class="text-center">
+            <p class="text-sm text-gray-500">Percentual</p>
+            <p
+              id="percentage-display"
+              class="text-4xl font-extrabold text-[var(--excel-green-dark)]"
+            >
+              0%
+            </p>
+          </div>
+        </div>
+
+        <h3 class="text-xl font-bold mt-8 mb-4 border-b pb-2 text-gray-800">
+          Revisão das Respostas
+        </h3>
+        <div id="review-list" class="space-y-6">
+          <!-- O feedback das respostas será injetado aqui -->
+        </div>
+
+        <!-- Botão de refazer teste removido conforme solicitado -->
+      </div>
+    </div>
+
+    <script>
+      // Lista de perguntas e respostas
+      const questions = [
+        {
+          q: "1. Qual é o caractere obrigatório que deve ser digitado no início de qualquer fórmula ou função no Excel para que ela funcione?",
+          options: [
+            "(dois pontos)",
+            " = (igual)",
+            ". (ponto)",
+            "# (jogo da velha)",
+          ],
+          answer: 1,
+        },
+        {
+          q: "2. Qual a extensão padrão de arquivos salvos nas versões mais recentes do Microsoft Excel?",
+          options: [".txt", ".doc", ".xlsx", ".ppt"],
+          answer: 2,
+        },
+        {
+          q: "3. Na fórmula `=A1*B1`, o asterisco (*) representa qual operação matemática?",
+          options: ["Adição", "Subtração", "Divisão", "Multiplicação"],
+          answer: 3,
+        },
+        {
+          q: "4. Qual função é utilizada para somar automaticamente um intervalo de células?",
+          options: ["=TOTAL()", "=CALCULAR()", "=SOMA()", "=ADICIONAR()"],
+          answer: 2,
+        },
+        {
+          q: "5. Como é identificada uma célula no Excel?",
+          options: [
+            "Apenas pelo número da linha (ex: 1)",
+            "Apenas pela letra da coluna (ex: A)",
+            "Pela junção da letra da coluna e número da linha (ex: A1)",
+            "Pela junção do número da linha e letra da coluna (ex: 1A)",
+          ],
+          answer: 2,
+        },
+        {
+          q: "6. Se você quiser calcular a média aritmética das notas que estão nas células A1, A2 e A3, qual fórmula deve usar?",
+          options: [
+            "=MEDIANA(A1:A3)",
+            "=MÉDIA(A1:A3)",
+            "=MÉDIA(A1;A3)",
+            "=DIVIDIR(A1:A3)",
+          ],
+          answer: 1,
+        },
+        {
+          q: "7. Qual símbolo é utilizado para representar a 'divisão' em uma fórmula do Excel?",
+          options: ["%", "/", "\\", "÷"],
+          answer: 1,
+        },
+        {
+          q: "8. O que acontece se você digitar um número muito grande em uma célula e a coluna for muito estreita para exibi-lo?",
+          options: [
+            "O Excel apaga o número.",
+            "O Excel exibe uma série de símbolos #######.",
+            "O Excel exibe uma mensagem de erro #VALOR!.",
+            "O número é convertido para texto automaticamente.",
+          ],
+          answer: 1,
+        },
+        {
+          q: "9. Qual tecla de atalho é comumente usada para 'editar' o conteúdo de uma célula sem precisar clicar na barra de fórmulas?",
+          options: ["F1", "F2", "F5", "F12"],
+          answer: 1,
+        },
+        {
+          q: "10. Para selecionar um intervalo de células que vai de A1 até A10, como essa referência é escrita na fórmula?",
+          options: ["A1-A10", "A1;A10", "A1:A10", "A1,A10"],
+          answer: 2,
+        },
+        {
+          q: "11. Qual função retorna o MAIOR valor numérico em um intervalo de células?",
+          options: ["=MAIOR()", "=MÁXIMO()", "=ALTO()", "=GRANDE()"],
+          answer: 1,
+        },
+        {
+          q: "12. Se você deseja encontrar o MENOR valor em um conjunto de dados, qual função deve utilizar?",
+          options: ["=MÍNIMO()", "=PEQUENO()", "=BAIXO()", "=MENOR()"],
+          answer: 0,
+        },
+        {
+          q: "13. O que é a 'Alça de Preenchimento' no Excel?",
+          options: [
+            "Um botão para salvar o arquivo.",
+            "Uma pequena cruz preta no canto inferior direito da célula ativa usado para copiar fórmulas ou sequências.",
+            "Uma ferramenta para colorir o fundo da célula.",
+            "Uma função para preencher formulários na internet.",
+          ],
+          answer: 1,
+        },
+        {
+          q: "14. Qual destas fórmulas está correta para subtrair o valor da célula B1 do valor da célula A1?",
+          options: ["=A1-B1", "=SUBTRAIR(A1:B1)", "=A1:B1", "A1-B1="],
+          answer: 0,
+        },
+        {
+          q: "15. Qual a função do botão 'Mesclar e Centralizar'?",
+          options: [
+            "Divide uma célula em várias partes.",
+            "Soma os valores e coloca no centro.",
+            "Combina várias células selecionadas em uma única célula maior e centraliza o conteúdo.",
+            "Coloca bordas em todas as células.",
+          ],
+          answer: 2,
+        },
+        {
+          q: "16. Na hierarquia das operações matemáticas dentro do Excel, o que é calculado primeiro?",
+          options: [
+            "Adição e Subtração.",
+            "O que estiver dentro dos Parênteses ().",
+            "Multiplicação e Divisão.",
+            "O Excel calcula sempre da esquerda para a direita, sem prioridades.",
+          ],
+          answer: 1,
+        },
+        {
+          q: "17. Qual o resultado da fórmula `=10+2*5`?",
+          options: ["60", "20", "12", "24"],
+          answer: 1,
+        },
+        {
+          q: "18. O símbolo `;` (ponto e vírgula) dentro de uma função (ex: `=SOMA(A1;A5)`) serve para:",
+          options: [
+            "Indicar um intervalo contínuo (de A1 até A5).",
+            "Separar argumentos ou células específicas (A1 e A5 apenas).",
+            "Finalizar a fórmula.",
+            "Realizar uma divisão.",
+          ],
+          answer: 1,
+        },
+        {
+          q: "19. Se aparecer o erro `#DIV/0!` em uma célula, o que isso significa?",
+          options: [
+            "A coluna é muito estreita.",
+            "Você digitou texto em uma fórmula matemática.",
+            "Você tentou dividir um número por zero ou por uma célula vazia.",
+            "A fórmula está incompleta.",
+          ],
+          answer: 2,
+        },
+        {
+          q: "20. Qual formato de número deve ser aplicado para que o valor 10 apareça como 'R$ 10,00'?",
+          options: [
+            "Texto",
+            "Data Abreviada",
+            "Porcentagem",
+            "Contábil ou Moeda",
+          ],
+          answer: 3,
+        },
+      ];
+
+      const quizForm = document.getElementById("quiz-form");
+      const questionsList = document.getElementById("questions-list");
+      const resultsArea = document.getElementById("results-area");
+      const quizContainer = document.getElementById("quiz-container");
+      const scoreDisplay = document.getElementById("score-display");
+      const percentageDisplay = document.getElementById("percentage-display");
+      const reviewList = document.getElementById("review-list");
+      const submitButton = document.getElementById("submit-button");
+
+      // Função para renderizar as perguntas na tela
+      function renderQuestions() {
+        questions.forEach((qData, index) => {
+          const qNum = index + 1;
+          const questionDiv = document.createElement("div");
+
+          // Adicionando a classe 'question-item' para aplicar o estilo de fundo suave no container verde
+          questionDiv.className =
+            "question-item p-5 border-b border-opacity-20 last:border-b-0";
+          questionDiv.innerHTML = `
+                    <h4 class="text-lg font-semibold mb-4">${qData.q}</h4>
+                    <div class="space-y-3">
+                        ${qData.options
+                          .map(
+                            (option, optIndex) => `
+                            <div>
+                                <input type="radio" id="q${qNum}o${optIndex}" name="q${qNum}" value="${optIndex}" data-question-index="${index}">
+                                <label for="q${qNum}o${optIndex}" class="option-label block p-3 rounded cursor-pointer transition duration-150 ease-in-out">
+                                    ${String.fromCharCode(
+                                      97 + optIndex
+                                    )}) ${option}
+                                </label>
+                            </div>
+                        `
+                          )
+                          .join("")}
+                    </div>
+                `;
+          questionsList.appendChild(questionDiv);
+        });
+      }
+
+      // Função para processar o formulário e calcular o resultado
+      function submitQuiz(event) {
+        event.preventDefault();
+
+        // Desabilita o botão para evitar múltiplos cliques
+        submitButton.disabled = true;
+        submitButton.textContent = "Processando...";
+
+        let score = 0;
+        const answers = [];
+
+        questions.forEach((qData, index) => {
+          const qNum = index + 1;
+          // Busca a opção selecionada no formulário
+          const selectedOptionElement = quizForm.elements[`q${qNum}`];
+          let userChoice = selectedOptionElement
+            ? parseInt(selectedOptionElement.value)
+            : null;
+          const isCorrect = userChoice === qData.answer;
+
+          if (isCorrect) {
+            score++;
+          }
+
+          answers.push({
+            q: qData.q,
+            options: qData.options,
+            correctIndex: qData.answer,
+            userIndex: userChoice,
+            isCorrect: isCorrect,
+          });
+        });
+
+        // Oculta o formulário e mostra os resultados
+        quizContainer.classList.add("hidden");
+        resultsArea.classList.remove("hidden");
+
+        // Exibe a pontuação
+        const totalQuestions = questions.length;
+        const percentage = ((score / totalQuestions) * 100).toFixed(0);
+        scoreDisplay.textContent = `${score}/${totalQuestions}`;
+        percentageDisplay.textContent = `${percentage}%`;
+
+        // Renderiza a revisão
+        renderReview(answers);
+
+        // Reabilita o botão (embora ele esteja oculto, é boa prática)
+        submitButton.disabled = false;
+      }
+
+      // Função para exibir a revisão das respostas
+      function renderReview(answers) {
+        reviewList.innerHTML = ""; // Limpa a lista
+        answers.forEach((answerData, index) => {
+          const reviewItem = document.createElement("div");
+
+          // Determina a cor do ícone
+          const iconClass = answerData.isCorrect
+            ? "text-green-600"
+            : answerData.userIndex !== null
+            ? "text-red-600"
+            : "text-gray-500";
+
+          // Determina o ícone
+          const iconSvg = answerData.isCorrect
+            ? `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>`
+            : answerData.userIndex !== null
+            ? `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>`
+            : `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>`;
+
+          reviewItem.className =
+            "p-4 rounded-lg border border-[var(--excel-border)]";
+          reviewItem.innerHTML = `
+                    <div class="flex items-start mb-3">
+                        <div class="flex-shrink-0 mr-3 ${iconClass}">
+                            ${iconSvg}
+                        </div>
+                        <p class="font-bold text-gray-900">${answerData.q}</p>
+                    </div>
+                    
+                    <div class="space-y-1 ml-9">
+                        ${answerData.options
+                          .map((option, optIndex) => {
+                            let optionClass =
+                              "p-2 rounded border text-sm transition duration-100";
+
+                            // 1. Se a opção for a correta (gabarito)
+                            if (optIndex === answerData.correctIndex) {
+                              optionClass +=
+                                " correct-answer border-green-500 font-semibold";
+                            }
+
+                            // 2. Se o usuário selecionou, mas estava errado
+                            else if (
+                              optIndex === answerData.userIndex &&
+                              !answerData.isCorrect
+                            ) {
+                              optionClass +=
+                                " incorrect-answer border-red-500 line-through";
+                            } else {
+                              optionClass += " border-[var(--excel-border)]";
+                            }
+
+                            // Texto que indica a escolha do usuário
+                            const userIndicator =
+                              optIndex === answerData.userIndex
+                                ? answerData.isCorrect
+                                  ? " (Sua Resposta Correta)"
+                                  : " (Sua Resposta Errada)"
+                                : "";
+
+                            // Se não foi respondida
+                            const notAnswered =
+                              answerData.userIndex === null &&
+                              optIndex === answerData.correctIndex
+                                ? " (Não Respondida)"
+                                : "";
+
+                            return `
+                                <div class="${optionClass}">
+                                    ${String.fromCharCode(
+                                      97 + optIndex
+                                    )}) ${option}
+                                    ${userIndicator}
+                                    ${notAnswered}
+                                </div>
+                            `;
+                          })
+                          .join("")}
+                        ${
+                          answerData.userIndex === null
+                            ? '<p class="text-sm text-yellow-600 mt-2 font-medium">Você deixou esta questão em branco.</p>'
+                            : ""
+                        }
+                    </div>
+                `;
+          reviewList.appendChild(reviewItem);
+        });
+
+        // Role a tela para o topo da área de resultados
+        resultsArea.scrollIntoView({ behavior: "smooth" });
+      }
+
+      // Inicializa o teste
+      renderQuestions();
+      quizForm.addEventListener("submit", submitQuiz);
+    </script>
+  </body>
+</html>
